@@ -14,6 +14,5 @@ Base.metadata.create_all(bind=engine)
 app.include_router(router, prefix="/api")
 
 @app.get("/") 
-    
-    async def root(): 
+async def root(): 
     return {"message": "Vehicle Tracking Backend"}
