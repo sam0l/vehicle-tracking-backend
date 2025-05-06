@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends 
 from fastapi.middleware.cors import CORSMiddleware 
 from .models import Base 
-from .database import engine, get_db from .api.endpoints 
-import router 
+from .database import engine, get_db 
+from .api.endpoints import router 
 import os
 
 app = FastAPI()
