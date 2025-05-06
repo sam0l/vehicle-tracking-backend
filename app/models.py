@@ -1,23 +1,20 @@
-from sqlalchemy import Column, Integer, Float, String, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from datetime import datetime
-
-Base = declarative_base()
+from sqlalchemy import Column, Integer, Float, String, Text, DateTime
+from app.database import Base
 
 class Telemetry(Base):
     __tablename__ = "telemetry"
     id = Column(Integer, primary_key=True, index=True)
-    latitude = Column(Float)
-    longitude = Column(Float)
-    speed = Column(Float)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    speed = Column(Float, nullable=False)
+    timestamp = Column(DateTime, nullable=False)
 
 class Detection(Base):
     __tablename__ = "detections"
     id = Column(Integer, primary_key=True, index=True)
-    latitude = Column(Float)
-    longitude = Column(Float)
-    speed = Column(Float)
-    sign_type = Column(String)
-    image = Column(String)  # Base64 encoded
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    speed = Column(Float, nullable=False)
+    sign_type = Column(String, nullable=False)
+    image = Column(Text, nullable=False)
+    timestamp = Column(DateTime, nullable=False)

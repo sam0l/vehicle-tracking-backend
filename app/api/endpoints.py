@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, ValidationError
 from app import models, database
 import logging
+from datetime import datetime
 
 router = APIRouter()
 
@@ -15,7 +16,12 @@ class TelemetryData(BaseModel):
     latitude: float
     longitude: float
     speed: float
-    timestamp: int
+    timestamp: str  # Expect ISO 8601 string (e.g., "2025-05-06T12:34:56")
+
+    def to_orm_dict(self):
+        data = self.dict()
+        data["timestamp"] = datetime.fromisoformat(data["timestamp"])
+        return data
 
 class DetectionData(TelemetryData):
     sign_type: str
@@ -32,7 +38,7 @@ async def create_detection(data: dict, db: Session = Depends(database.get_db)):
             except ValidationError as ve:
                 logger.error(f"Validation error for detection data: {ve}")
                 raise HTTPException(status_code=422, detail=f"Invalid detection data: {ve}")
-            detection = models.Detection(**detection_data.dict())
+            detection = models.Detection(**detection_data.to_orm_dict())
             db.add(detection)
             db.commit()
             db.refresh(detection)
@@ -44,7 +50,7 @@ async def create_detection(data: dict, db: Session = Depends(database.get_db)):
             except ValidationError as ve:
                 logger.error(f"Validation error for telemetry data: {ve}")
                 raise HTTPException(status_code=422, detail=f"Invalid telemetry data: {ve}")
-            telemetry = models.Telemetry(**telemetry_data.dict())
+            telemetry = models.Telemetry(**telemetry_data.to_orm_dict())
             db.add(telemetry)
             db.commit()
             db.refresh(telemetry)

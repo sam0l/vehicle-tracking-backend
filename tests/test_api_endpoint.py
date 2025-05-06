@@ -1,5 +1,6 @@
 import requests
 import time
+from datetime import datetime
 
 def test_api_endpoints():
     # Replace with your Render backend URL
@@ -8,12 +9,15 @@ def test_api_endpoints():
     telemetry_endpoint = f"{backend_url}/api/telemetry"
     detections_get_endpoint = f"{backend_url}/api/detections"
 
+    # Current timestamp in ISO 8601 format
+    current_time = datetime.utcnow().isoformat()
+
     # Sample telemetry data
     telemetry_data = {
         "latitude": 37.7749,
         "longitude": -122.4194,
         "speed": 50.0,
-        "timestamp": int(time.time())
+        "timestamp": current_time
     }
 
     # Sample detection data (with a dummy base64 image for testing)
@@ -23,7 +27,7 @@ def test_api_endpoints():
         "speed": 50.0,
         "sign_type": "Stop",
         "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",  # Tiny 1x1 pixel image
-        "timestamp": int(time.time())
+        "timestamp": current_time
     }
 
     try:
