@@ -1,87 +1,73 @@
-from fastapi import APIRouter, Depends 
-from sqlalchemy.orm import Session 
-from ..models import Telemetry, Detection 
-from ..database import get_db 
-from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from pydantic import BaseModel, ValidationError
+from app import models, database
+import logging
 
 router = APIRouter()
 
-@router.post("/detections") 
-async def receive_data(data: dict, db: 
-    Session = Depends(get_db)): 
-    try: 
-        if 'image' in data: 
-            
-            detection = Detection( 
-             
-                    latitude=data['latitude'], 
-                    longitude=data['longitude'], 
-                    speed=data['speed'], 
-                    sign_type=data['sign_type'], 
-                    image=data['image'], 
-                    timestamp=datetime.fromtimestamp(data['timestamp']) ) 
-            
-            db.add(detection) 
-        
-        else: 
-            
-            telemetry = Telemetry( 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-                    latitude=data['latitude'], 
-                    longitude=data['longitude'], 
-                    speed=data['speed'], 
-                    timestamp=datetime.fromtimestamp(data['timestamp']) ) 
-            
-            db.add(telemetry) 
-            
-            db.commit() 
-            
-            return {"status": "success"} 
+# Pydantic models for validation
+class TelemetryData(BaseModel):
+    latitude: float
+    longitude: float
+    speed: float
+    timestamp: int
 
-    except Exception as e: 
+class DetectionData(TelemetryData):
+    sign_type: str
+    image: str
 
-        print(f"Error storing data: {e}") 
-        
-        return {"status": "error", "message": str(e)}
-
-@router.get("/telemetry") 
-async def get_telemetry(db: Session = Depends(get_db)):
+@router.post("/detections")
+async def create_detection(data: dict, db: Session = Depends(database.get_db)):
+    logger.info(f"Received data: {data}")
     try:
+        if "sign_type" in data:
+            # Validate detection data
+            try:
+                detection_data = DetectionData(**data)
+            except ValidationError as ve:
+                logger.error(f"Validation error for detection data: {ve}")
+                raise HTTPException(status_code=422, detail=f"Invalid detection data: {ve}")
+            detection = models.Detection(**detection_data.dict())
+            db.add(detection)
+            db.commit()
+            db.refresh(detection)
+            logger.info("Detection data saved successfully")
+        else:
+            # Validate telemetry data
+            try:
+                telemetry_data = TelemetryData(**data)
+            except ValidationError as ve:
+                logger.error(f"Validation error for telemetry data: {ve}")
+                raise HTTPException(status_code=422, detail=f"Invalid telemetry data: {ve}")
+            telemetry = models.Telemetry(**telemetry_data.dict())
+            db.add(telemetry)
+            db.commit()
+            db.refresh(telemetry)
+            logger.info("Telemetry data saved successfully")
+        return {"status": "success"}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Unexpected error processing detection: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-        telemetry = db.query(Telemetry).all() 
-        
-        return [{
-            
-            "latitude": t.latitude, 
-            "longitude": t.longitude, 
-            "speed": t.speed, 
-            "timestamp": t.timestamp} 
-            
-            for t in telemetry ]
-    
-    except Exception as e: 
+@router.get("/telemetry")
+async def get_telemetry(db: Session = Depends(database.get_db)):
+    try:
+        return db.query(models.Telemetry).all()
+    except Exception as e:
+        logger.error(f"Error fetching telemetry: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching telemetry: {str(e)}")
 
-        print(f"Error fetching telemetry: {e}") 
-        return {"status": "error", "message": str(e)}
-
-@router.get("/detections") 
-
-async def get_detections(db: Session = Depends(get_db)): 
-
-    try: 
-        detections = db.query(Detection).all() 
-        
-        return [{
-
-            "latitude": d.latitude, 
-            "longitude": d.longitude, 
-            "speed": d.speed, 
-            "sign_type": d.sign_type, 
-            "image": d.image, 
-            "timestamp": d.timestamp} 
-
-            for d in detections
-            ] 
-    except Exception as e: 
-        print(f"Error fetching detections: {e}") 
-        return {"status": "error", "message": str(e)}
+@router.get("/detections")
+async def get_detections(db: Session = Depends(database.get_db)):
+    try:
+        return db.query(models.Detection).all()
+    except Exception as e:
+        logger.error(f"Error fetching detections: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching detections: {str(e)}")
