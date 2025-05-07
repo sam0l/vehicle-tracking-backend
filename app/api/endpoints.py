@@ -62,3 +62,7 @@ def get_past_detections(db: Session = Depends(database.get_db)):
         }
         for d in detections
     ]
+
+@router.get("/health")
+def health_check():
+    return {"status": "OK"}

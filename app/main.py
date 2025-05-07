@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import endpoints
+from app.api.endpoints import router
+from app.database import init_db
 
 app = FastAPI()
 
@@ -8,14 +9,13 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://vehicle-tracking-frontend.onrender.com"],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["GET", "POST"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type"],
 )
 
-# Include endpoints router with /api prefix
-app.include_router(endpoints.router, prefix="/api")
+app.include_router(router)
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+@app.on_event("startup")
+async def startup_event():
+    init_db()
