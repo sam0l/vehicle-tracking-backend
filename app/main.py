@@ -13,4 +13,5 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
-app.include_router(router)
+# Include router with /api prefix
+app.include_router(router, prefix="/api")
