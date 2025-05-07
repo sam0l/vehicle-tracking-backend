@@ -7,10 +7,11 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://vehicle-tracking-frontend.onrender.com"],
+    allow_origins=["https://vehicle-tracking-frontend.onrender.com", "http://localhost:3000"],
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"]  # Expose all headers
 )
 
 # Include router with /api prefix
