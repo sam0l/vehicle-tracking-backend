@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app import models, database
 from pydantic import BaseModel
@@ -36,38 +36,73 @@ def create_detection(data: DetectionData, db: Session = Depends(database.get_db)
 
 @router.get("/detections")
 @cache(expire=30)  # Cache for 30 seconds
-def get_detections(db: Session = Depends(database.get_db)) -> List[dict]:
-    detections = db.query(models.Detection).order_by(models.Detection.timestamp.desc()).all()
-    return [
-        {
-            "id": d.id,
-            "latitude": d.latitude,
-            "longitude": d.longitude,
-            "speed": d.speed,
-            "timestamp": d.timestamp.isoformat(),
-            "sign_type": d.sign_type,
-            "image": d.image
-        }
-        for d in detections
-    ]
+def get_detections(
+    db: Session = Depends(database.get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100)
+) -> List[dict]:
+    # Get total count
+    total = db.query(models.Detection).count()
+    
+    # Get paginated detections
+    detections = db.query(models.Detection)\
+        .order_by(models.Detection.timestamp.desc())\
+        .offset(skip)\
+        .limit(limit)\
+        .all()
+    
+    return {
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "data": [
+            {
+                "id": d.id,
+                "latitude": d.latitude,
+                "longitude": d.longitude,
+                "speed": d.speed,
+                "timestamp": d.timestamp.isoformat(),
+                "sign_type": d.sign_type,
+                "image": d.image[:100] + "..." if d.image and len(d.image) > 100 else d.image  # Truncate large images
+            }
+            for d in detections
+        ]
+    }
 
 @router.get("/past_detections")
 @cache(expire=30)  # Cache for 30 seconds
-def get_past_detections(db: Session = Depends(database.get_db)) -> List[dict]:
-    # Fetch all detections except the latest 3, ordered by timestamp descending
-    detections = db.query(models.Detection).order_by(models.Detection.timestamp.desc()).offset(3).all()
-    return [
-        {
-            "id": d.id,
-            "latitude": d.latitude,
-            "longitude": d.longitude,
-            "speed": d.speed,
-            "timestamp": d.timestamp.isoformat(),
-            "sign_type": d.sign_type,
-            "image": d.image
-        }
-        for d in detections
-    ]
+def get_past_detections(
+    db: Session = Depends(database.get_db),
+    skip: int = Query(3, ge=0),
+    limit: int = Query(50, ge=1, le=100)
+) -> List[dict]:
+    # Get total count
+    total = db.query(models.Detection).count()
+    
+    # Get paginated detections
+    detections = db.query(models.Detection)\
+        .order_by(models.Detection.timestamp.desc())\
+        .offset(skip)\
+        .limit(limit)\
+        .all()
+    
+    return {
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "data": [
+            {
+                "id": d.id,
+                "latitude": d.latitude,
+                "longitude": d.longitude,
+                "speed": d.speed,
+                "timestamp": d.timestamp.isoformat(),
+                "sign_type": d.sign_type,
+                "image": d.image[:100] + "..." if d.image and len(d.image) > 100 else d.image  # Truncate large images
+            }
+            for d in detections
+        ]
+    }
 
 @router.get("/health")
 def health_check():
