@@ -125,6 +125,42 @@ def get_past_detections(
         ]
     }
 
+@router.get("/device_status")
+def get_device_status(db: Session = Depends(database.get_db)):
+    try:
+        # Get the most recent detection
+        latest_detection = db.query(models.Detection)\
+            .order_by(models.Detection.timestamp.desc())\
+            .first()
+        
+        if not latest_detection:
+            return {
+                "status": "disconnected",
+                "last_seen": None,
+                "message": "No data available"
+            }
+        
+        # Check if the data is recent (within 5 minutes)
+        now = datetime.utcnow()
+        time_diff = (now - latest_detection.timestamp).total_seconds() / 60
+        
+        if time_diff <= 5:
+            return {
+                "status": "connected",
+                "last_seen": latest_detection.timestamp.isoformat(),
+                "message": "Device is connected"
+            }
+        else:
+            return {
+                "status": "disconnected",
+                "last_seen": latest_detection.timestamp.isoformat(),
+                "message": "No recent data"
+            }
+    except Exception as e:
+        print(f"Error checking device status: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/health")
 def health_check():
     return {"status": "OK"}
