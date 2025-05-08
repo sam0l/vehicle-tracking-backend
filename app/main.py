@@ -26,11 +26,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
     expose_headers=["*"],
     max_age=3600,  # Cache preflight requests for 1 hour
-    allow_origin_regex=None
 )
 
 # Include router with /api prefix
