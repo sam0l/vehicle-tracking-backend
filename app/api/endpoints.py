@@ -21,6 +21,10 @@ class DetectionData(BaseModel):
 @router.post("/detections")
 def create_detection(data: DetectionData, db: Session = Depends(database.get_db)):
     try:
+        # Log incoming data for debugging
+        print(f"Received data: {data}")
+        
+        # Create detection record
         db_detection = models.Detection(
             latitude=data.latitude,
             longitude=data.longitude,
@@ -29,17 +33,22 @@ def create_detection(data: DetectionData, db: Session = Depends(database.get_db)
             sign_type=data.sign_type,
             image=data.image
         )
+        
+        # Add and commit
         db.add(db_detection)
         db.commit()
         db.refresh(db_detection)
+        
         # Invalidate cache after new detection
         FastAPICache.clear()
-        return {"status": "success"}
+        
+        return {"status": "success", "message": "Data received successfully"}
     except Exception as e:
         db.rollback()
-        print(f"Error creating detection: {str(e)}")
+        error_msg = f"Error creating detection: {str(e)}"
+        print(error_msg)
         print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @router.get("/detections")
 @cache(expire=30)  # Cache for 30 seconds

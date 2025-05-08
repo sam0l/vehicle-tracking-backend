@@ -15,6 +15,6 @@ class Detection(Base):
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
     speed = Column(Float, nullable=False)
-    sign_type = Column(String, nullable=False)
-    image = Column(Text, nullable=False)
+    sign_type = Column(String, nullable=True)
+    image = Column(Text, nullable=True)
     timestamp = Column(DateTime, nullable=False)
