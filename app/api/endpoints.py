@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app import models, database
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
+from fastapi_cache import FastAPICache
+from fastapi_cache.decorator import cache
 
 router = APIRouter()
 
@@ -28,10 +30,13 @@ def create_detection(data: DetectionData, db: Session = Depends(database.get_db)
     db.add(db_detection)
     db.commit()
     db.refresh(db_detection)
+    # Invalidate cache after new detection
+    FastAPICache.clear()
     return {"status": "success"}
 
 @router.get("/detections")
-def get_detections(db: Session = Depends(database.get_db)):
+@cache(expire=30)  # Cache for 30 seconds
+def get_detections(db: Session = Depends(database.get_db)) -> List[dict]:
     detections = db.query(models.Detection).order_by(models.Detection.timestamp.desc()).all()
     return [
         {
@@ -47,7 +52,8 @@ def get_detections(db: Session = Depends(database.get_db)):
     ]
 
 @router.get("/past_detections")
-def get_past_detections(db: Session = Depends(database.get_db)):
+@cache(expire=30)  # Cache for 30 seconds
+def get_past_detections(db: Session = Depends(database.get_db)) -> List[dict]:
     # Fetch all detections except the latest 3, ordered by timestamp descending
     detections = db.query(models.Detection).order_by(models.Detection.timestamp.desc()).offset(3).all()
     return [
