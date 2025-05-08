@@ -4,8 +4,15 @@ from app.api.endpoints import router
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
+import os
 
-app = FastAPI()
+app = FastAPI(
+    title="Vehicle Tracking API",
+    description="API for vehicle tracking system",
+    version="1.0.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc"
+)
 
 # Add CORS middleware
 origins = [
@@ -30,5 +37,16 @@ app.include_router(router, prefix="/api")
 
 @app.on_event("startup")
 async def startup():
-    redis = aioredis.from_url("redis://localhost", encoding="utf8", decode_responses=True)
-    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+    # Only initialize Redis if we're not in development
+    if os.getenv("ENVIRONMENT") != "development":
+        try:
+            redis = aioredis.from_url("redis://localhost", encoding="utf8", decode_responses=True)
+            FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+        except Exception as e:
+            print(f"Redis initialization failed: {e}")
+            # Continue without Redis - the app will work without caching
+            pass
+
+@app.get("/")
+async def root():
+    return {"message": "Vehicle Tracking Backend"}
