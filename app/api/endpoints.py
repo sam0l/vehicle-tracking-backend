@@ -7,8 +7,12 @@ from datetime import datetime
 from fastapi_cache import FastAPICache
 from fastapi_cache.decorator import cache
 import traceback
+import pytz
 
 router = APIRouter()
+
+# Define Singapore timezone
+SGT = pytz.timezone('Asia/Singapore')
 
 class DetectionData(BaseModel):
     latitude: float
@@ -24,12 +28,16 @@ def create_detection(data: DetectionData, db: Session = Depends(database.get_db)
         # Log incoming data for debugging
         print(f"Received data: {data}")
         
+        # Parse timestamp and convert to UTC+8
+        utc_dt = datetime.fromisoformat(data.timestamp)
+        sgt_dt = utc_dt.astimezone(SGT)
+        
         # Create detection record
         db_detection = models.Detection(
             latitude=data.latitude,
             longitude=data.longitude,
             speed=data.speed,
-            timestamp=datetime.fromisoformat(data.timestamp),
+            timestamp=sgt_dt,
             sign_type=data.sign_type,
             image=data.image
         )
@@ -78,9 +86,9 @@ def get_detections(
                     "latitude": d.latitude,
                     "longitude": d.longitude,
                     "speed": d.speed,
-                    "timestamp": d.timestamp.isoformat(),
+                    "timestamp": d.timestamp.astimezone(SGT).isoformat(),
                     "sign_type": d.sign_type,
-                    "image": d.image[:100] + "..." if d.image and len(d.image) > 100 else d.image  # Truncate large images
+                    "image": d.image  # Don't truncate the image data
                 }
                 for d in detections
             ]
@@ -140,20 +148,23 @@ def get_device_status(db: Session = Depends(database.get_db)):
                 "message": "No data available"
             }
         
+        # Convert timestamp to SGT
+        sgt_timestamp = latest_detection.timestamp.astimezone(SGT)
+        
         # Check if the data is recent (within 5 minutes)
-        now = datetime.utcnow()
-        time_diff = (now - latest_detection.timestamp).total_seconds() / 60
+        now = datetime.now(SGT)
+        time_diff = (now - sgt_timestamp).total_seconds() / 60
         
         if time_diff <= 5:
             return {
                 "status": "connected",
-                "last_seen": latest_detection.timestamp.isoformat(),
+                "last_seen": sgt_timestamp.isoformat(),
                 "message": "Device is connected"
             }
         else:
             return {
                 "status": "disconnected",
-                "last_seen": latest_detection.timestamp.isoformat(),
+                "last_seen": sgt_timestamp.isoformat(),
                 "message": "No recent data"
             }
     except Exception as e:

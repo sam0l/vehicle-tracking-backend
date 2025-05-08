@@ -5,3 +5,4 @@ psycopg2-binary==2.9.7
 python-multipart==0.0.6
 fastapi-cache2==0.2.1
 redis==4.5.4
+pytz==2023.3
