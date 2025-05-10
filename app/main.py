@@ -5,7 +5,7 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
 import os
-from .api import sim_data
+from app.api import sim_data
 
 app = FastAPI(
     title="Vehicle Tracking API",
@@ -36,7 +36,7 @@ app.add_middleware(
 # Include router with /api prefix
 app.include_router(router, prefix="/api")
 
-# Include routers
+# Include sim_data router
 app.include_router(sim_data.router)
 
 @app.on_event("startup")
