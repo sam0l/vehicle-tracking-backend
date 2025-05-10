@@ -18,3 +18,10 @@ class Detection(Base):
     sign_type = Column(String, nullable=True)
     image = Column(Text, nullable=True)
     timestamp = Column(DateTime, nullable=False)
+
+class SimData(Base):
+    __tablename__ = "sim_data"
+    id = Column(Integer, primary_key=True, index=True)
+    balance = Column(String, nullable=True)
+    data_usage = Column(Integer, nullable=True)
+    timestamp = Column(DateTime, nullable=False)

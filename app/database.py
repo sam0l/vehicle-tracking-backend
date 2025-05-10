@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import os
 from app.base import Base
-from app.models import Detection, Telemetry  # Import models after Base
+from app.models import Detection, Telemetry, SimData  # Import SimData model
 
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
