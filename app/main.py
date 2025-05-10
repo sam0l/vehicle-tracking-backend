@@ -37,7 +37,7 @@ app.add_middleware(
 app.include_router(router, prefix="/api")
 
 # Include sim_data router
-app.include_router(sim_data.router)
+app.include_router(sim_data.router, prefix="/api")
 
 @app.on_event("startup")
 async def startup():
