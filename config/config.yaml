@@ -1,0 +1,35 @@
+backend:
+  url: "https://vehicle-tracking-backend-bwmz.onrender.com"
+  endpoint_prefix: "/api"
+  detection_endpoint: "/detections"
+
+gps:
+  port: "/dev/ttyUSB0"
+  baudrate: 9600
+  timeout: 1
+  power_delay: 2
+  agps_delay: 5
+
+imu:
+  i2c_bus: 1
+  i2c_address: ["0x68", "0x69"]
+
+camera:
+  device_id: 0
+  width: 640
+  height: 480
+  fps: 30
+
+yolo:
+  rknn_model_path: "models/yolov5s.rknn"
+  onnx_model_path: "models/yolov5s.onnx"
+  imgsz: 640
+  confidence_threshold: 0.25
+  send_images: false
+
+logging:
+  level: "INFO"
+  interval:
+    gps: 1
+    imu: 0.1
+    camera: 0.5 
