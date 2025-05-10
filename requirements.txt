@@ -1,0 +1,12 @@
+fastapi==0.103.2 
+uvicorn==0.23.2 
+sqlalchemy==2.0.21
+psycopg2-binary==2.9.7 
+python-multipart==0.0.6
+fastapi-cache2==0.2.1
+redis==4.5.4
+pytz==2023.3
+flask==2.3.3
+flask-cors==4.0.0
+pyyaml==6.0.1
+requests==2.31.0
