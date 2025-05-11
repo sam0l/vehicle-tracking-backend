@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import os
 from app.base import Base
-from app.models import Detection, Telemetry, SimData  # Import SimData model
+from app.models import Detection, Telemetry, DataUsage  # Import DataUsage model
 from dotenv import load_dotenv
 
 load_dotenv()
