@@ -19,9 +19,9 @@ class Detection(Base):
     image = Column(Text, nullable=True)
     timestamp = Column(DateTime, nullable=False)
 
-class SimData(Base):
-    __tablename__ = "sim_data"
+class DataUsage(Base):
+    __tablename__ = "data_usage"
     id = Column(Integer, primary_key=True, index=True)
-    balance = Column(String, nullable=True)
-    data_usage = Column(Integer, nullable=True)
     timestamp = Column(DateTime, nullable=False)
+    bytes_sent = Column(Integer, nullable=False)
+    bytes_received = Column(Integer, nullable=False)
