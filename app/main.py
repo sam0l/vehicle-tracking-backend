@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import router
+from app.api import endpoints
+from app.api import clear_detections  # Import the new endpoint
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
@@ -34,10 +35,13 @@ app.add_middleware(
 )
 
 # Include router with /api prefix
-app.include_router(router, prefix="/api")
+app.include_router(endpoints.router, prefix="/api", tags=["api"])
 
 # Include sim_data router
 app.include_router(sim_data.router, prefix="/api")
+
+# Include clear_detections router
+app.include_router(clear_detections.router, prefix="/api", tags=["api"])
 
 @app.on_event("startup")
 async def startup():
