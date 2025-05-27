@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app import models, database
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi_cache import FastAPICache
 from fastapi_cache.decorator import cache
 import traceback
@@ -28,16 +28,23 @@ def create_detection(data: DetectionData, db: Session = Depends(database.get_db)
         # Log incoming data for debugging
         print(f"Received data: {data}")
         
-        # Parse timestamp and convert to UTC+8
-        utc_dt = datetime.fromisoformat(data.timestamp)
-        sgt_dt = utc_dt.astimezone(SGT)
+        # Parse timestamp, ensure it's UTC, and convert to naive UTC for storage
+        aware_dt = datetime.fromisoformat(data.timestamp)
+        # Ensure it's UTC. If it's already UTC, astimezone(pytz.utc) is a no-op.
+        # If it's naive, this would assume local system time, but edge sends aware UTC.
+        if aware_dt.tzinfo is None or aware_dt.tzinfo.utcoffset(aware_dt) != timedelta(0):
+            print(f"Warning: Incoming timestamp {data.timestamp} was not UTC or tz-naive, converting to UTC.")
+            aware_utc_dt = aware_dt.astimezone(pytz.utc)
+        else:
+            aware_utc_dt = aware_dt
+        naive_utc_dt_for_storage = aware_utc_dt.replace(tzinfo=None)
         
         # Create detection record
         db_detection = models.Detection(
             latitude=data.latitude,
             longitude=data.longitude,
             speed=data.speed,
-            timestamp=sgt_dt,
+            timestamp=naive_utc_dt_for_storage,
             sign_type=data.sign_type,
             image=data.image
         )
@@ -86,7 +93,8 @@ def get_detections(
                     "latitude": d.latitude,
                     "longitude": d.longitude,
                     "speed": d.speed,
-                    "timestamp": d.timestamp.astimezone(SGT).isoformat(),
+                    # Timestamp from DB (d.timestamp) is naive UTC. Convert to SGT for display.
+                    "timestamp": pytz.utc.localize(d.timestamp).astimezone(SGT).isoformat(),
                     "sign_type": d.sign_type,
                     "image": d.image  # Don't truncate the image data
                 }
@@ -125,7 +133,8 @@ def get_past_detections(
                 "latitude": d.latitude,
                 "longitude": d.longitude,
                 "speed": d.speed,
-                "timestamp": d.timestamp.isoformat(),
+                # Timestamp from DB (d.timestamp) is naive UTC. Convert to SGT for display.
+                "timestamp": pytz.utc.localize(d.timestamp).astimezone(SGT).isoformat(),
                 "sign_type": d.sign_type,
                 "image": d.image[:100] + "..." if d.image and len(d.image) > 100 else d.image  # Truncate large images
             }
@@ -148,23 +157,24 @@ def get_device_status(db: Session = Depends(database.get_db)):
                 "message": "No data available"
             }
         
-        # Convert timestamp to SGT
-        sgt_timestamp = latest_detection.timestamp.astimezone(SGT)
+        # Timestamp from DB is naive UTC. Convert to SGT for display.
+        retrieved_naive_utc_dt = latest_detection.timestamp
+        aware_sgt_timestamp = pytz.utc.localize(retrieved_naive_utc_dt).astimezone(SGT)
         
-        # Check if the data is recent (within 5 minutes)
-        now = datetime.now(SGT)
-        time_diff = (now - sgt_timestamp).total_seconds() / 60
+        # Check if device is connected
+        current_time_sgt = datetime.now(SGT) # Use SGT for comparison with SGT timestamp
+        time_diff = (current_time_sgt - aware_sgt_timestamp).total_seconds() / 60
         
         if time_diff <= 5:
             return {
                 "status": "connected",
-                "last_seen": sgt_timestamp.isoformat(),
+                "last_seen": aware_sgt_timestamp.isoformat(),
                 "message": "Device is connected"
             }
         else:
             return {
                 "status": "disconnected",
-                "last_seen": sgt_timestamp.isoformat(),
+                "last_seen": aware_sgt_timestamp.isoformat(),
                 "message": "No recent data"
             }
     except Exception as e:
