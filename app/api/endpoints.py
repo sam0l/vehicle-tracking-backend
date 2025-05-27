@@ -165,7 +165,7 @@ def get_device_status(db: Session = Depends(database.get_db)):
         current_time_sgt = datetime.now(SGT) # Use SGT for comparison with SGT timestamp
         time_diff = (current_time_sgt - aware_sgt_timestamp).total_seconds() / 60
         
-        if time_diff <= 5:
+        if time_diff <= 60:  # Increased threshold to 60 seconds
             return {
                 "status": "connected",
                 "last_seen": aware_sgt_timestamp.isoformat(),
@@ -175,7 +175,7 @@ def get_device_status(db: Session = Depends(database.get_db)):
             return {
                 "status": "disconnected",
                 "last_seen": aware_sgt_timestamp.isoformat(),
-                "message": "No recent data"
+                "message": f"No recent data. Last seen {int(time_diff)} seconds ago."
             }
     except Exception as e:
         print(f"Error checking device status: {str(e)}")
